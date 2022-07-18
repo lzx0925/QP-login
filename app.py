@@ -1,3 +1,4 @@
+# Author: Zixin Li
 from flask import Flask, render_template, request, url_for, make_response
 from flask_mysqldb import MySQL
 from werkzeug.utils import redirect
