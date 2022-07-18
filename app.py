@@ -1,6 +1,9 @@
-from flask import Flask, render_template, request, url_for
+from flask import Flask, render_template, request, url_for, make_response
 from flask_mysqldb import MySQL
 from werkzeug.utils import redirect
+import json
+# from requests import *
+import pymysql
 
 import user_class
 
@@ -19,18 +22,31 @@ mysql = MySQL(app)
 @app.route('/', methods=['GET', 'POST'])
 def get_register_info():
     if request.method == "POST":
-        if request.form['action'] == 'Register':                                                # get register request
-            info = request.form
-            if not password_check(info['password']) or not email_check(info['email']):          # return error message to page if email or password voilates rules
-                return render_template('index.html', register_status=False,error='format')
-
-            if register(info['username'], info['password'], info['email']):                     # put registered user's data into database
-                return render_template('index.html', register_status=True)
-            else:
-                return render_template('index.html', register_status=False, error='exist')      # return error message to page if register failed
-        elif request.form['action'] == 'Login':                                                 # get login request
-            return redirect('login')                                                            # redirect to login page
-    return render_template('index.html')
+        d = {'message': None,
+             'cookies': '111',
+             'token': 'abc'
+             }
+        info = request.json
+        if not password_check(info['password']) or not email_check(info['email']):          # return error message to page if email or password voilates rules
+            d['message'] = 'invalid email or password'
+            r = json.dumps(d)
+            resp = make_response(r)
+            resp.status = '404'
+            return resp
+        if register(info['username'], info['password'], info['email']):                     # put registered user's data into database
+            d['message'] = 'register successfully'
+            d['password'] = info['password']
+            d['email'] = info['email']
+            r = json.dumps(d)
+            resp = make_response(r)
+            resp.status = '200'
+            return resp
+        else:
+            d['message'] = 'email already exists'
+            r = json.dumps(d)
+            resp = make_response(r)
+            resp.status = '404'
+            return resp
 
 
 def register(username, password, email):
@@ -68,33 +84,47 @@ def all_users():
 @app.route('/login', methods=['GET', 'POST'])
 def get_login_info():
     if request.method == 'POST':
-        info = request.form
+        info = request.json
+        d = {
+             'message': None,
+             'email': info['email'],
+             'role': None,
+             'cookies': '111',
+             'token': 'abc'
+             }
         check_user = user_login(info['email'], info['password'])                # two lists to check role and return user's data
         check_admin = admin_login(info['email'], info['password'])              # [True, {'email':'xxx','name':'xxx', ...}] / [False]
         if check_user[0]:                                                       # if login request is user, redirect to user's dashboard
-            return redirect(url_for('dashboard',
-                                    login_status=True,
-                                    user_info=dict_to_str(check_user[1]),
-                                    email=check_user[1]['email'],
-                                    role='User'))
+            d['message']='user login successfully'
+            d['user_info']= check_user[1]
+            d['role']= 'User'
+            r = json.dumps(d)
+            resp = make_response(r)
+            resp.status = '200'
+            return resp
         elif check_admin[0]:                                                    # if login request is administrator, redirect to admin's dashboard
-            print(dict_to_str(check_admin[1]))
-            return redirect(url_for('dashboard',
-                                    login_status=True,
-                                    user_info=dict_to_str(check_admin[1]),
-                                    email=check_admin[1]['email'],
-                                    role='Admin'))
+            d['message'] = 'administrator login successfully'
+            d['user_info'] = check_admin[1]
+            d['role'] = 'Admin'
+            r = json.dumps(d)
+            resp = make_response(r)
+            resp.status = '200'
+            return resp
         else:                                                                   # return False status to page if login request cannot be found in database
-            return render_template('login.html', login_status=False)
-    return render_template('login.html')
+            d['message'] = 'login failed'
+            r = json.dumps(d)
+            resp = make_response(r)
+            resp.status = '404'
+            return resp
 
 
 @app.route('/dashboard/<login_status>/<user_info>/<email>/<role>', methods=['GET', 'POST'])
 def dashboard(login_status, user_info, email, role):
     if request.method == 'POST':
-        if request.form['action'] == 'Modify':                                  # if get modify request
+        info=request.json
+        if request.json['action'] == 'Modify':                                  # if get modify request
             return redirect(url_for('modify', email=email, role=role))          # redirect to modify page with email and role(admin/user)
-        elif request.form['action'] == 'Delete':                                # if get delete request
+        elif request.json['action'] == 'Delete':                                # if get delete request
             return redirect(url_for('delete', email=email, role=role))          # redirect to delete page with email and role(only admin)
     return render_template('dashboard.html', login_status=login_status,
                            user_info=user_info, email=email, role=role)
@@ -131,74 +161,84 @@ def admin_login(email, password):
         return True, info
 
 
-@app.route('/delete_<email>_<role>', methods=['GET', 'POST'])
-def delete(email, role):
+@app.route('/delete', methods=['GET', 'POST'])
+def delete():
     if request.method == "POST":
-        delete_email = request.form['email']                                        # Get the email need to be deleted
+        delete_email = request.json['email']                                        # Get the email need to be deleted
         cur = mysql.connection.cursor()
         cur.execute("select * from User_info where email=%s", (delete_email,))      # find this email in User database
         exist = cur.fetchone()
         if exist is None:                                                           # if cannot find email in database
-            return render_template('delete.html', email=email,                      # return false message to delete page
-                                   role=role, delete_status=False)
+            d = {'message': 'Delete failed, cannot find email',
+                 'email': delete_email,
+                 'cookies': '111',
+                 'token': 'abc'
+                 }
+            r = json.dumps(d)
+            resp = make_response(r)
+            resp.status = '404'
+            return resp
         else:                                                                       # if find email in database, delete it
-            print(delete_email)
             cur1 = mysql.connection.cursor()
             cur1.execute("delete from User_info where email=%s", (delete_email,))
             cur1.connection.commit()
-            return render_template('delete.html', email=email,
-                                   role=role, delete_status=True)
-    return render_template('delete.html', email=email, role=role)
+            d = {'message': 'Delete Successfully',
+                 'email': delete_email,
+                 'cookies': '111',
+                 'token': 'abc'
+                 }
+            r = json.dumps(d)
+            resp = make_response(r)
+            resp.status = '200'
+            return resp
 
 
-@app.route('/modify_<email>_<role>', methods=['GET', 'POST'])
-def modify(email, role):
-    if role == "Admin":
-        all_user_info = all_users()
+@app.route('/modify', methods=['GET', 'POST'])
+def modify():
     if request.method == "POST":
-        modify_info = request.form                                                  # get data need to be modified
-        modify_status = False
+        email = request.json['email']
+        modify_info = request.json['modify_info']
+        d = {
+            "Modified_email": email,
+            'cookies': '111',
+            'token': 'abc'
+        }
         if modify_info['password'] and not password_check(modify_info['password']):                             # return error message to page if password voilates rules
-            return render_template('modify.html',
-                                   role=role,
-                                   email=email,
-                                   modify_status=modify_status,
-                                   list=all_users(),
-                                   error='password')
-        if role == 'Admin':                                                         # if Admin request modify
-            print(121)
-            modify_status = modify_user_info(modify_info['email'], modify_info)     # modify data to corresponding email
-            return render_template('modify.html',
-                                   role=role,
-                                   email=email,
-                                   modify_status=modify_status,
-                                   list=all_users())
-        elif role == 'User':                                                        # if user request modify
-            modify_status = modify_user_info(email, modify_info)                    # modify data of user him/herself
-            return redirect(url_for('dashboard',                                    # redirect to user's dashboard and update data
-                                    login_status=True,
-                                    user_info=dict_to_str(get_user_info(email)),
-                                    email=email,
-                                    role=role))
-    return render_template('modify.html', role=role, email=email)
+            d["message"] = "Modify failed. Error: Invalid Password"
+            r = json.dumps(d)
+            resp = make_response(r)
+            resp.status = '404'
+            return resp
+        modify_status = modify_user_info(email, modify_info)
+        if not modify_status:
+            d["message"] = "Modify failed. Error: Cannot find email"
+            r = json.dumps(d)
+            resp = make_response(r)
+            resp.status = '404'
+            return resp
+        else:
+            d["message"] = "Modify Successfully"
+            r = json.dumps(d)
+            resp = make_response(r)
+            resp.status = '200'
+            return resp
 
 
 def modify_user_info(email, modify_info):
     if check_unique(email):                                                     # return false if cannot find email in database
-        print(111)
         return False
-    else:                                                                       # else updata data
+    else:                                                                       # else update data
         cur = mysql.connection.cursor()
-        if modify_info['username'] != '':
+        if modify_info['username']:
             cur.execute("update User_info set username=%s where email=%s",
                         (modify_info['username'], email))
-        if modify_info['password'] != '':
+        if modify_info['password']:
             cur.execute("update User_info set password=%s where email=%s",
                         (modify_info['password'], email))
-        if modify_info['name'] != '':
+        if modify_info['name']:
             cur.execute("update User_info set name=%s where email=%s",
                         (modify_info['name'], email))
-        if modify_info['age'] != '':
+        if modify_info['age']:
             cur.execute("update User_info set age=%s where email=%s",
                         (int(modify_info['age']), email))
         cur.connection.commit()
