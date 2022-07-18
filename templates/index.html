@@ -1,0 +1,19 @@
+<HTML>
+<BODY bgcolor="cyan">
+<form method="POST" action="">
+    <center>
+    <H1>Register </H1> <br>
+        Status: {{register_status}}<br>
+    {%if error%}
+        Error: {{error}}<br>
+    {%endif%}
+    Username <input type = "text" name= "username" /> <br>
+    Password <input type = "text" name = "password" /> <br>
+    Email <input type = "text" name = "email" /> <br>
+    <input type = "submit" name="action" value="Register"><br>
+    <input type="submit" name="action" value="Login">
+    </center>
+</form>
+
+</BODY>
+</HTML>

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="">
+<head>
+    <meta charset="UTF-8">
+    Login Status: {{login_status}}<br>
+</head>
+<body>
+    {% if role == 'Admin' %}
+        Welcome Administrator!
+        <form action="" method="post">
+            <input type="hidden" name="role" value="Admin">
+            <input type="hidden" name="email" value="{{email}}">
+            <input type="submit" name="action" value="Modify"/>
+            <input type="submit" name="action" value="Delete" />
+        </form>
+    {% endif %}
+    {% if role == 'User' %}
+        Hi, {{role}} {{email}} !<br>
+        user_info: {{user_info}}}<br>
+        email:{{email}}<br>
+        <form action="", method="post">
+            <input type="hidden" name="role" value="User">
+            <input type="hidden" name="email" value="{{email}}">
+            <input type="submit" name="action" value="Modify" />
+        </form>
+    {% endif %}
+
+</body>
+</html>

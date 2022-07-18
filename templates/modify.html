@@ -1,0 +1,33 @@
+<HTML>
+</BODY>
+<form method="POST" action="">
+    <center>
+    {% if role == 'User' %}
+        <BODY bgcolor="yellow">
+        <H1>Hi, {{role}} {{email}}! Enter the Info You Want To Modify</H1> <br>
+    {% endif %}
+
+    {% if role == 'Admin' %}
+        <BODY bgcolor="pink">
+        <H1>Hi, {{role}} {{email}}! Enter the User's Info You Want To Modify</H1> <br>
+        Email <input type = "text" name= "email" /> <br>
+    {% endif %}
+    Username <input type = "text" name= "username" /> <br>
+    Password <input type = "text" name = "password" /> <br>
+    Name <input type = "text" name = "name" /> <br>
+    Age <input type = "text" name = "age" /> <br>
+        <input type = "submit"><br>
+
+    </center>
+</form>
+
+Modify Status:{{modify_status}}</br>
+uid username password name age email</br>
+
+{% for l in list %}
+    {% for k,v in l.items()%}
+        {{v}}
+    {% endfor %}</br>
+{% endfor %}
+</BODY>
+</HTML>
