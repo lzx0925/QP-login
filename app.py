@@ -52,37 +52,32 @@ def cont_sql(input_ip='39.103.183.155', input_port=3306, input_user='root', inpu
 
 
 @app.route('/', methods=['GET', 'POST'])
-def get_register_info():
+def user_register():
     if request.method == "POST":
-        d = {'message': None,
-             'cookies': '111',
-             'token': 'abc'
-             }
         info = request.json
         print(info)
-        if not password_check(info['password']) or not email_check(info['email']):          # return error message to page if email or password voilates rules
-            d['message'] = 'invalid email or password'
-            r = json.dumps(d)
-            resp = make_response(r)
-            resp.status = '404'
-            return resp
-        if register(info['username'], info['password'], info['email']):                     # put registered user's data into database
-            d['message'] = 'register successfully'
-            d['password'] = info['password']
-            d['email'] = info['email']
-            r = json.dumps(d)
-            resp = make_response(r)
-            resp.status = '200'
-            return resp
-        else:
-            d['message'] = 'email already exists'
-            r = json.dumps(d)
-            resp = make_response(r)
-            resp.status = '404'
-            return resp
+        return add_user(info['username'], info['password'], info['email'], 'User')
 
 
-def register(username, password, email):
+@app.route('/admin_add', methods=['GET', 'POST'])
+def admin_add():
+    if request.method == "POST":
+        info = request.json
+        print(info)
+        return add_user(info['username'], info['password'], info['email'], info['role'])
+
+
+def add_user(username, password, email, role):
+    d = {'message': None,
+         'cookies': '111',
+         'token': 'abc'
+         }
+    if not password_check(password) or not email_check(email):  # return error message to page if email or password voilates rules
+        d['message'] = 'invalid email or password'
+        r = json.dumps(d)
+        resp = make_response(r)
+        resp.status = '404'
+        return resp
     if check_unique(email):                                                     # return false if email is already registered
         #cur = mysql.connection.cursor()
         dataBase = pymysql.connect(
@@ -95,14 +90,26 @@ def register(username, password, email):
             autocommit=True
         )
         cur = dataBase.cursor()
-        cur.execute("insert into User_info(username, password, email) "         # insert data into database if email is not registered
-                    "values (%s, %s, %s)",
-                    (username, password, email))
+        cur.execute("insert into User_info(username, password, email, role) "         # insert data into database if email is not registered
+                    "values (%s, %s, %s, %s)",
+                    (username, password, email, role))
         #mysql.connection.commit()
         cur.connection.commit()
-        return True
+        #return True
+        d['message'] = 'register successfully'
+        d['password'] = password
+        d['email'] = email
+        r = json.dumps(d)
+        resp = make_response(r)
+        resp.status = '200'
+        return resp
     else:
-        return False
+        #return False
+        d['message'] = 'email already exists'
+        r = json.dumps(d)
+        resp = make_response(r)
+        resp.status = '404'
+        return resp
 
 
 def check_unique(email):                                                # return true if email is in not database, else false
@@ -157,19 +164,12 @@ def get_login_info():
              'token': 'abc'
              }
         check_user = user_login(info['email'], info['password'])                # two lists to check role and return user's data
-        check_admin = admin_login(info['email'], info['password'])              # [True, {'email':'xxx','name':'xxx', ...}] / [False]
+        print(check_user)
+        # check_admin = admin_login(info['email'], info['password'])              # [True, {'email':'xxx','name':'xxx', ...}] / [False]
         if check_user[0]:                                                       # if login request is user, redirect to user's dashboard
             d['message']='user login successfully'
             d['user_info']= check_user[1]
-            d['role']= 'User'
-            r = json.dumps(d)
-            resp = make_response(r)
-            resp.status = '200'
-            return resp
-        elif check_admin[0]:                                                    # if login request is administrator, redirect to admin's dashboard
-            d['message'] = 'administrator login successfully'
-            d['user_info'] = check_admin[1]
-            d['role'] = 'Admin'
+            d['role']= check_user[1][4]
             r = json.dumps(d)
             resp = make_response(r)
             resp.status = '200'
@@ -228,28 +228,6 @@ def user_login(email, password):
                 (email, password))
     info = cur.fetchone()
     if info is None:                                        # if email and password do not match in User database, return [False]
-        return [False]
-    else:                                                   # else return True and dictionary of user data
-        return True, info
-
-
-def admin_login(email, password):
-    #cur = mysql.connection.cursor()
-    dataBase = pymysql.connect(
-        host='39.103.183.155',  # MySQL服务端的IP地址
-        port=3306,  # MySQL默认PORT地址(端口号)
-        user='root',  # 用户名
-        password='xx3721xx',  # 密码,也可以简写为passwd
-        database='user',  # 库名称,也可以简写为db
-        charset='utf8',  # 字符编码
-        autocommit=True
-    )
-    cur = dataBase.cursor()
-    cur.execute("select * from Admin_info "
-                "where email=%s and password=%s",
-                (email, password))
-    info = cur.fetchone()
-    if info is None:                                        # if email and password do not match in Admin database, return [False]
         return [False]
     else:                                                   # else return True and dictionary of user data
         return True, info
@@ -367,16 +345,6 @@ def modify_user_info(email, modify_info):
                         (int(modify_info['age']), email))
         cur.connection.commit()
     return True
-
-
-def dict_to_str(info):                          # convert dictionary to string in format: key1:value1,key2:value2,...
-    s = ''
-    for k, v in info.items():
-        if v is None:
-            s += str(k)+':'+str('')+','         # if value is none set value as ''. e.g. key1:,key2:,
-        else:
-            s += str(k)+':'+str(v)+','
-    return s
 
 
 def password_check(password):
