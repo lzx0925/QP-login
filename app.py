@@ -6,18 +6,49 @@ import json
 # from requests import *
 import pymysql
 
-import user_class
 
-self_account = user_class.User()
+
+
 app = Flask(__name__)
-
-app.config['MYSQL_HOST'] = 'localhost'
+'''
+app.config['MYSQL_HOST'] = '39.103.183.155'
 app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = '123456'
-app.config['MYSQL_DB'] = 'users_info'
+app.config['MYSQL_PASSWORD'] = 'xx3721xx'
+app.config['MYSQL_DB'] = 'user'
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 
 mysql = MySQL(app)
+'''
+def sqlshow(res):
+    for i in res:
+        print(i)
+
+def cont_sql(input_ip='39.103.183.155', input_port=3306, input_user='root', input_passwd='xx3721xx', inpout_databasename='user'):
+    # 链接服务端
+    try:
+        dataBase = pymysql.connect(
+            host    = input_ip,                      # MySQL服务端的IP地址
+            port    = input_port,                    # MySQL默认PORT地址(端口号)
+            user    = input_user,                    # 用户名
+            password= input_passwd,                  # 密码,也可以简写为passwd
+            database= inpout_databasename,           # 库名称,也可以简写为db
+            charset = 'utf8',                        # 字符编码
+            autocommit = True
+        )
+        cursor = dataBase.cursor()
+        print("sucessfully connected!")
+        print(type(cursor))
+    except Exception as err:
+        print(err)
+        print(err)
+        print('error!')
+    # 貌似没有什么显示
+    cursor.execute("USE event_zt;")
+    print('cursor.execute("USE user;")')
+    sqlshow(cursor)
+    cursor.execute("SHOW TABLES;")
+    print('cursor.execute("SHOW TABLES;")')
+    sqlshow(cursor)
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -28,6 +59,7 @@ def get_register_info():
              'token': 'abc'
              }
         info = request.json
+        print(info)
         if not password_check(info['password']) or not email_check(info['email']):          # return error message to page if email or password voilates rules
             d['message'] = 'invalid email or password'
             r = json.dumps(d)
@@ -52,18 +84,39 @@ def get_register_info():
 
 def register(username, password, email):
     if check_unique(email):                                                     # return false if email is already registered
-        cur = mysql.connection.cursor()
+        #cur = mysql.connection.cursor()
+        dataBase = pymysql.connect(
+            host='39.103.183.155',  # MySQL服务端的IP地址
+            port=3306,  # MySQL默认PORT地址(端口号)
+            user='root',  # 用户名
+            password='xx3721xx',  # 密码,也可以简写为passwd
+            database='user',  # 库名称,也可以简写为db
+            charset='utf8',  # 字符编码
+            autocommit=True
+        )
+        cur = dataBase.cursor()
         cur.execute("insert into User_info(username, password, email) "         # insert data into database if email is not registered
                     "values (%s, %s, %s)",
                     (username, password, email))
-        mysql.connection.commit()
+        #mysql.connection.commit()
+        cur.connection.commit()
         return True
     else:
         return False
 
 
 def check_unique(email):                                                # return true if email is in not database, else false
-    cur = mysql.connection.cursor()
+    #cur = mysql.connection.cursor()
+    dataBase = pymysql.connect(
+        host='39.103.183.155',  # MySQL服务端的IP地址
+        port=3306,  # MySQL默认PORT地址(端口号)
+        user='root',  # 用户名
+        password='xx3721xx',  # 密码,也可以简写为passwd
+        database='user',  # 库名称,也可以简写为db
+        charset='utf8',  # 字符编码
+        autocommit=True
+    )
+    cur = dataBase.cursor()
     cur.execute("select * from User_info where email=%s", [email])
     if cur.fetchone() is None:
         return True
@@ -72,7 +125,17 @@ def check_unique(email):                                                # return
 
 
 def all_users():
-    cur = mysql.connection.cursor()
+    #cur = mysql.connection.cursor()
+    dataBase = pymysql.connect(
+        host='39.103.183.155',  # MySQL服务端的IP地址
+        port=3306,  # MySQL默认PORT地址(端口号)
+        user='root',  # 用户名
+        password='xx3721xx',  # 密码,也可以简写为passwd
+        database='user',  # 库名称,也可以简写为db
+        charset='utf8',  # 字符编码
+        autocommit=True
+    )
+    cur = dataBase.cursor()
     cur.execute("select * from User_info")
     info = cur.fetchall()                       # get all users' data
     for diction in info:
@@ -132,14 +195,34 @@ def dashboard(login_status, user_info, email, role):
 
 
 def get_user_info(email):
-    cur = mysql.connection.cursor()
+    #cur = mysql.connection.cursor()
+    dataBase = pymysql.connect(
+        host='39.103.183.155',  # MySQL服务端的IP地址
+        port=3306,  # MySQL默认PORT地址(端口号)
+        user='root',  # 用户名
+        password='xx3721xx',  # 密码,也可以简写为passwd
+        database='user',  # 库名称,也可以简写为db
+        charset='utf8',  # 字符编码
+        autocommit=True
+    )
+    cur = dataBase.cursor()
     cur.execute("select * from User_info where email=%s", (email,))
     info = cur.fetchone()
     return info                                                                 # return a dictionary of user data
 
 
 def user_login(email, password):
-    cur = mysql.connection.cursor()
+    #cur = mysql.connection.cursor()
+    dataBase = pymysql.connect(
+        host='39.103.183.155',  # MySQL服务端的IP地址
+        port=3306,  # MySQL默认PORT地址(端口号)
+        user='root',  # 用户名
+        password='xx3721xx',  # 密码,也可以简写为passwd
+        database='user',  # 库名称,也可以简写为db
+        charset='utf8',  # 字符编码
+        autocommit=True
+    )
+    cur = dataBase.cursor()
     cur.execute("select * from User_info "
                 "where email=%s and password=%s",
                 (email, password))
@@ -151,7 +234,17 @@ def user_login(email, password):
 
 
 def admin_login(email, password):
-    cur = mysql.connection.cursor()
+    #cur = mysql.connection.cursor()
+    dataBase = pymysql.connect(
+        host='39.103.183.155',  # MySQL服务端的IP地址
+        port=3306,  # MySQL默认PORT地址(端口号)
+        user='root',  # 用户名
+        password='xx3721xx',  # 密码,也可以简写为passwd
+        database='user',  # 库名称,也可以简写为db
+        charset='utf8',  # 字符编码
+        autocommit=True
+    )
+    cur = dataBase.cursor()
     cur.execute("select * from Admin_info "
                 "where email=%s and password=%s",
                 (email, password))
@@ -166,7 +259,17 @@ def admin_login(email, password):
 def delete():
     if request.method == "POST":
         delete_email = request.json['email']                                        # Get the email need to be deleted
-        cur = mysql.connection.cursor()
+        #cur = mysql.connection.cursor()
+        dataBase = pymysql.connect(
+            host='39.103.183.155',  # MySQL服务端的IP地址
+            port=3306,  # MySQL默认PORT地址(端口号)
+            user='root',  # 用户名
+            password='xx3721xx',  # 密码,也可以简写为passwd
+            database='user',  # 库名称,也可以简写为db
+            charset='utf8',  # 字符编码
+            autocommit=True
+        )
+        cur = dataBase.cursor()
         cur.execute("select * from User_info where email=%s", (delete_email,))      # find this email in User database
         exist = cur.fetchone()
         if exist is None:                                                           # if cannot find email in database
@@ -180,7 +283,17 @@ def delete():
             resp.status = '404'
             return resp
         else:                                                                       # if find email in database, delete it
-            cur1 = mysql.connection.cursor()
+            #cur1 = mysql.connection.cursor()
+            dataBase = pymysql.connect(
+                host='39.103.183.155',  # MySQL服务端的IP地址
+                port=3306,  # MySQL默认PORT地址(端口号)
+                user='root',  # 用户名
+                password='xx3721xx',  # 密码,也可以简写为passwd
+                database='user',  # 库名称,也可以简写为db
+                charset='utf8',  # 字符编码
+                autocommit=True
+            )
+            cur1 = dataBase.cursor()
             cur1.execute("delete from User_info where email=%s", (delete_email,))
             cur1.connection.commit()
             d = {'message': 'Delete Successfully',
@@ -229,7 +342,17 @@ def modify_user_info(email, modify_info):
     if check_unique(email):                                                     # return false if cannot find email in database
         return False
     else:                                                                       # else update data
-        cur = mysql.connection.cursor()
+        #cur = mysql.connection.cursor()
+        dataBase = pymysql.connect(
+            host='39.103.183.155',  # MySQL服务端的IP地址
+            port=3306,  # MySQL默认PORT地址(端口号)
+            user='root',  # 用户名
+            password='xx3721xx',  # 密码,也可以简写为passwd
+            database='user',  # 库名称,也可以简写为db
+            charset='utf8',  # 字符编码
+            autocommit=True
+        )
+        cur = dataBase.cursor()
         if modify_info['username']:
             cur.execute("update User_info set username=%s where email=%s",
                         (modify_info['username'], email))
@@ -279,4 +402,6 @@ def email_check(email):
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=1)
+    cont_sql()
+
