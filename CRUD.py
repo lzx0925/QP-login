@@ -2,15 +2,18 @@ from flask import make_response
 import json
 from check import *
 from constraints import *
+from config import *
+import pymysql
+from flask_sqlalchemy import SQLAlchemy
 
 
 def db_connect():
     dataBase = pymysql.connect(
-        host='39.103.183.155',  # MySQL服务端的IP地址
-        port=3306,  # MySQL默认PORT地址(端口号)
-        user='root',  # 用户名
-        password='xx3721xx',  # 密码,也可以简写为passwd
-        database='user',  # 库名称,也可以简写为db
+        host=HOST,  # MySQL服务端的IP地址
+        port=PORT,  # MySQL默认PORT地址(端口号)
+        user=USERNAME,  # 用户名
+        password=PASSWORD,  # 密码,也可以简写为passwd
+        database=DATABASE,  # 库名称,也可以简写为db
         charset='utf8',  # 字符编码
         autocommit=True
     )
