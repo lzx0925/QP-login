@@ -285,40 +285,42 @@ def delete():
             return resp
 
 
-@app.route('/modify', methods=['GET', 'POST'])
-def modify():
+@app.route('/user_modify', methods=['GET', 'POST'])
+def user_modify():
     if request.method == "POST":
         email = request.json['email']
         modify_info = request.json['modify_info']
-        d = {
-            "Modified_email": email,
-            'cookies': '111',
-            'token': 'abc'
-        }
-        if modify_info['password'] and not password_check(modify_info['password']):                             # return error message to page if password voilates rules
-            d["message"] = "Modify failed. Error: Invalid Password"
-            r = json.dumps(d)
-            resp = make_response(r)
-            resp.status = '404'
-            return resp
-        modify_status = modify_user_info(email, modify_info)
-        if not modify_status:
-            d["message"] = "Modify failed. Error: Cannot find email"
-            r = json.dumps(d)
-            resp = make_response(r)
-            resp.status = '404'
-            return resp
-        else:
-            d["message"] = "Modify Successfully"
-            r = json.dumps(d)
-            resp = make_response(r)
-            resp.status = '200'
-            return resp
+        print(email, modify_info)
+        return modify(email, modify_info)
 
 
-def modify_user_info(email, modify_info):
+@app.route('/admin_modify', methods=['GET', 'POST'])
+def admin_modify():
+    if request.method == "POST":
+        email = request.json['email']
+        modify_info = request.json['modify_info']
+        print(email, modify_info)
+        return modify(email, modify_info)
+
+
+def modify(email, modify_info):
+    d = {
+        "Modified_email": email,
+        'cookies': '111',
+        'token': 'abc'
+    }
     if check_unique(email):                                                     # return false if cannot find email in database
-        return False
+        d["message"] = "Modify failed. Error: Email Doesn't Exist"
+        r = json.dumps(d)
+        resp = make_response(r)
+        resp.status = '404'
+        return resp
+    elif modify_info['password'] and not password_check(modify_info['password']):  # return error message to page if password voilates rules
+        d["message"] = "Modify failed. Error: Invalid Password"
+        r = json.dumps(d)
+        resp = make_response(r)
+        resp.status = '404'
+        return resp
     else:                                                                       # else update data
         #cur = mysql.connection.cursor()
         dataBase = pymysql.connect(
@@ -340,11 +342,22 @@ def modify_user_info(email, modify_info):
         if modify_info['name']:
             cur.execute("update User_info set name=%s where email=%s",
                         (modify_info['name'], email))
+        if modify_info['phone']:
+            cur.execute("update User_info set phone=%s where email=%s",
+                        (modify_info['phone'], email))
         if modify_info['age']:
             cur.execute("update User_info set age=%s where email=%s",
                         (int(modify_info['age']), email))
+        if 'role' in modify_info.keys() and modify_info['role']:
+            cur.execute("update User_info set role=%s where email=%s",
+                        (modify_info['role'], email))
         cur.connection.commit()
-    return True
+        d["message"] = "Modify Successfully"
+        r = json.dumps(d)
+        resp = make_response(r)
+        resp.status = '200'
+        return resp
+
 
 
 def password_check(password):
