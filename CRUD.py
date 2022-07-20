@@ -96,25 +96,20 @@ def update(email, update_info):
     elif update_info['password'] and not password_check(update_info['password']):  # return error message to page if password voilates rules
         d["message"] = "Modify failed. Error: Invalid Password"
     else:  # else update data
+        query = User.query.filter_by(email=email).first()
         if update_info['username']:
-            cur.execute("update user_info set username=%s where email=%s",
-                        (update_info['username'], email))
+            query.username=update_info['username']
         if update_info['password']:
-            cur.execute("update user_info set password=%s where email=%s",
-                        (update_info['password'], email))
+            query.password = update_info['password']
         if update_info['name']:
-            cur.execute("update user_info set name=%s where email=%s",
-                        (update_info['name'], email))
+            query.name = update_info['name']
         if update_info['phone']:
-            cur.execute("update user_info set phone=%s where email=%s",
-                        (int(update_info['phone']), email))
+            query.phone = int(update_info['phone'])
         if update_info['age']:
-            cur.execute("update user_info set age=%s where email=%s",
-                        (int(update_info['age']), email))
+            query.age = int(update_info['age'])
         if 'role' in update_info.keys() and update_info['role']:
-            cur.execute("update user_info set role=%s where email=%s",
-                        (update_info['role'], email))
-        cur.connection.commit()
+            query.role = update_info['role']
+        db.session.commit()
         d["message"] = "Modify Successfully"
         status = '200'
     r = json.dumps(d)
@@ -126,18 +121,10 @@ def update(email, update_info):
 # read one user info
 def read_one(email, password=None):
     if password:
-        cur.execute("select * from user_info where email=%s and password=%s", (email, password))
+        query = User.query.filter_by(email=email, password=password).first()
     else:
-        cur.execute("select * from user_info where email=%s", (email,))
-    info = cur.fetchone()
-    return info
-
-
-# read all user info
-def read_all():
-    cur.execute("select * from user_info")
-    info = cur.fetchall()                       # get all users' data
-    return info                                 # return tuple of user info dicts ({user1 info},{user2 info},{...})
+        query = User.query.filter_by(email=email).first()
+    return [query.uid, query.password, query.email, query.username, query.role, query.name, query.age, query.phone]
 
 
 def login(email, password):

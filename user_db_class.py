@@ -22,7 +22,6 @@ class User(db.Model):
     age = db.Column(db.Integer)
     phone = db.Column(db.Integer)
 
-
     def __init__(self, password, email, username, role, name=None, age=None, phone=None):
         self.password = password
         self.email = email
@@ -34,6 +33,7 @@ class User(db.Model):
 
     def __repr__(self):
         return '<User %r>' % self.email
+
 
 if __name__ == "__main__":
     app.run()
