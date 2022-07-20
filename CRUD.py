@@ -1,10 +1,23 @@
 from flask import make_response
 import json
-from check import *
 from constraints import *
 from config import *
 import pymysql
 from flask_sqlalchemy import SQLAlchemy
+from flask import Flask
+from user_db_class import *
+
+#db = SQLAlchemy()
+
+app = Flask(__name__)
+
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_DATABASE_URI'] = "mysql+pymysql://root:xx3721xx@39.103.183.155/user"
+
+
+db.init_app(app)
+with app.app_context():
+    db.create_all()
 
 
 def db_connect():
@@ -24,20 +37,20 @@ cur = db_connect()
 
 
 # add user
-def add_user(username, password, email, role):
+def add_user(username, password, email, role, name=None, age=None, phone=None):
     d = {'message': None,
          'cookies': '111',
          'token': 'abc'
          }
     status = '404'
     if password_check(password) and email_check(email):  # return false if email is already registered
-        user = read_one(email)
-        if user is None:
-            cur.execute("insert into user_info(username, password, email, role) values (%s, %s, %s, %s)",
-                        (username, password, email, role))
-            cur.connection.commit()
+        exist = read_one(email)
+        if exist is None:
+            user = User(password, email, username, role, name, age, phone)
+            db.session.add(user)
+            db.session.commit()
             d['message'] = 'register successfully'
-            d['user_info'] = user
+            d['email'] = email
             status = '200'
         else:
             d['message'] = 'email already exists'
@@ -59,8 +72,9 @@ def delete(email):
     if read_one(email) is None:  # if cannot find email in database
         d['message'] = 'Delete failed, cannot find email'
     else:  # if find email in database, delete it
-        cur.execute("delete from user_info where email=%s", (email,))
-        cur.connection.commit()
+        query = User.query.filter_by(email=email).one()
+        db.session.delete(query)
+        db.session.commit()
         d['message'] = 'Delete Successfully'
         status = '200'
     r = json.dumps(d)
@@ -93,7 +107,7 @@ def update(email, update_info):
                         (update_info['name'], email))
         if update_info['phone']:
             cur.execute("update user_info set phone=%s where email=%s",
-                        (update_info['phone'], email))
+                        (int(update_info['phone']), email))
         if update_info['age']:
             cur.execute("update user_info set age=%s where email=%s",
                         (int(update_info['age']), email))
@@ -151,3 +165,5 @@ def login(email, password):
     resp.status = status
     return resp
 
+if __name__ == "__main__":
+    app.run()

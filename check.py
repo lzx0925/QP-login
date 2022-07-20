@@ -1,31 +1,23 @@
-'''import pymysql
-import pyodbc
-import sqlalchemy as db
-from sqlalchemy import create_engine
-import pandas as pd
-from flask import make_response
-import json
-from check import *
-from constraints import *
-from config import *
 from flask_sqlalchemy import SQLAlchemy
-print(111)
-engine = db.create_engine("mysql://root:xx3721xx@39.103.183.155/user?charset=utf8")
-connection = engine.connect()
-metadata = db.MetaData()
-user = db.Table('user_info', metadata, autoload=True, autoload_with=engine)
-# Print the column names
-print(user.columns.keys())
-print(repr(metadata.tables['user_info']))
+from flask import Flask
 
-query = db.select([user])
-ResultProxy = connection.execute(query)
-ResultSet = ResultProxy.fetchall()
-print(ResultSet[:3])
+db = SQLAlchemy()
 
-db.select([user]).where(user.columns.role == 'User')
-result=connection.execute(query)
-resultset =result.fetchall()
-print(resultset)
+app = Flask(__name__)
 
-'''
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_DATABASE_URI'] = "mysql+pymysql://root:xx3721xx@39.103.183.155/user"
+
+db.init_app(app)
+
+print(1)
+with app.app_context():
+    print(2)
+    db.create_all()
+    print(13)
+    sql_cmd = "select * from user_info"
+    query_data = db.engine.execute(sql_cmd).fetchall()
+    print(query_data)
+
+if __name__ == "__main__":
+    app.run()

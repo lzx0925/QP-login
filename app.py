@@ -6,11 +6,22 @@ import json
 # from requests import *
 import pymysql
 from CRUD import *
+from flask_sqlalchemy import SQLAlchemy
+from flask import Flask
+from user_db_class import *
 
 app = Flask(__name__)
 
 
-@app.route('/', methods=['GET', 'POST'])
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_DATABASE_URI'] = "mysql+pymysql://root:xx3721xx@39.103.183.155/user"
+
+db.init_app(app)
+
+
+
+
+@app.route('/user_add', methods=['GET', 'POST'])
 def user_register():
     if request.method == "POST":
         info = request.json
