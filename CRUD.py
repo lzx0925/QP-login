@@ -3,37 +3,18 @@ import json
 from constraints import *
 from config import *
 import pymysql
-from flask_sqlalchemy import SQLAlchemy
-from flask import Flask
 from user_db_class import *
 
-#db = SQLAlchemy()
 
 app = Flask(__name__)
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_DATABASE_URI'] = "mysql+pymysql://root:xx3721xx@39.103.183.155/user"
+app.config['SQLALCHEMY_DATABASE_URI'] = "mysql://root:xx3721xx@39.103.183.155/user"
 
 
 db.init_app(app)
 with app.app_context():
     db.create_all()
-
-
-def db_connect():
-    dataBase = pymysql.connect(
-        host=HOST,  # MySQL服务端的IP地址
-        port=PORT,  # MySQL默认PORT地址(端口号)
-        user=USERNAME,  # 用户名
-        password=PASSWORD,  # 密码,也可以简写为passwd
-        database=DATABASE,  # 库名称,也可以简写为db
-        charset='utf8',  # 字符编码
-        autocommit=True
-    )
-    return dataBase.cursor()
-
-
-cur = db_connect()
 
 
 # add user
@@ -124,6 +105,8 @@ def read_one(email, password=None):
         query = User.query.filter_by(email=email, password=password).first()
     else:
         query = User.query.filter_by(email=email).first()
+    if query is None:
+        return query
     return [query.uid, query.password, query.email, query.username, query.role, query.name, query.age, query.phone]
 
 
